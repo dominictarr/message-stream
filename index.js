@@ -4,7 +4,7 @@ var through = require('through')
 var parser = exports =
 module.exports =
 function (listener) {
-  var ready = true, soFar = '', length = 0
+  var ready = true, soFar = '', length = 0, sep = ''
   return function (data) {
     if(data === false)
       return listener(soFar)
@@ -16,6 +16,7 @@ function (listener) {
         if (!m) 
           return //need more data
         length = Number(m[1])
+        sep    = m[2]
         soFar = soFar.substring(m[0].length)
       }
       if(soFar.length < length)
@@ -24,7 +25,7 @@ function (listener) {
       var emit = soFar.substring(0, length)
       soFar = soFar.substring(length)
       length = 0
-      listener(emit)
+      listener(emit, sep)
     }
   }
 }
