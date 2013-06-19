@@ -1,48 +1,22 @@
+var duplex = require('duplex')
+var serializer = require('stream-serializer')()
 
-var through = require('through')
+module.exports = function (onMessage, onEnd) {
 
-var parser = exports =
-module.exports =
-function (listener) {
-  var ready = true, soFar = '', length = 0, sep = ''
-  return function (data) {
-    if(data === false)
-      return listener(soFar)
-    soFar = soFar + data.toString()
-    while(soFar.length) {
-      //parse the length
-      if(!length) {
-        var m = /^(\d+)([^\d])/.exec(soFar)
-        if (!m) 
-          return //need more data
-        length = Number(m[1])
-        sep    = m[2]
-        soFar = soFar.substring(m[0].length)
-      }
-      if(soFar.length < length)
-        return //wait for more data
-      
-      var emit = soFar.substring(0, length)
-      soFar = soFar.substring(length)
-      length = 0
-      listener(emit, sep)
-    }
+  var d = duplex()
+    .on('_data', function (data) {
+      d.emit('message', data)
+    })
+    .on('_end', function () {
+      this._end()
+    })
+
+  if(onMessage)
+    d.on('message', onMessage)
+
+  d.send = d.queue = function (data) {
+    return this._data(data)
   }
-}
 
-exports.encode = function (sep) {
-  sep = sep || '!'
-  return through(function (data) {
-    this.queue(data.length + sep + data)
-  }, function () {
-    this.queue(null)
-  })
+  return serializer(d)
 }
-
-exports.decode = function () {
-  var t, parse = parser(function (message) {
-    t.queue(message)
-  })
-  return t = through(parse)
-}
-
